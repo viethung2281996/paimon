@@ -76,6 +76,16 @@ public class DateTimeUtils {
                     .optionalEnd()
                     .toFormatter();
 
+    private static final DateTimeFormatter MONGODB_TIMESTAMP_FORMATTER =
+            new DateTimeFormatterBuilder()
+                    .appendPattern("yyyy-[MM][M]-[dd][d]")
+                    .optionalStart()
+                    .appendPattern("'T'[HH][H]:[mm][m]:[ss][s]")
+                    .appendFraction(NANO_OF_SECOND, 0, 9, true)
+                    .appendPattern("'Z'")
+                    .optionalEnd()
+                    .toFormatter();
+
     /**
      * Converts the internal representation of a SQL DATE (int) to the Java type used for UDF
      * parameters ({@link java.sql.Date}).
@@ -557,7 +567,29 @@ public class DateTimeUtils {
     }
 
     public static LocalDateTime toLocalDateTime(String dateStr, int precision) {
-        return fromTemporalAccessor(DEFAULT_TIMESTAMP_FORMATTER.parse(dateStr), precision);
+        TemporalAccessor temporalAccessor;
+        // Try parsing with MongoDB formatter
+        temporalAccessor = tryParse(dateStr, MONGODB_TIMESTAMP_FORMATTER);
+        if (temporalAccessor != null) {
+            return fromTemporalAccessor(temporalAccessor, precision);
+        }
+
+        // Try parsing with default formatter
+        temporalAccessor = tryParse(dateStr, DEFAULT_TIMESTAMP_FORMATTER);
+        if (temporalAccessor != null) {
+            return fromTemporalAccessor(temporalAccessor, precision);
+        }
+        throw new java.time.format.DateTimeParseException(
+                "Unable to parse date: " + dateStr, dateStr, 0);
+    }
+
+    private static TemporalAccessor tryParse(String dateStr, DateTimeFormatter formatter) {
+        try {
+            return formatter.parse(dateStr);
+        } catch (java.time.format.DateTimeParseException e) {
+            // Log the exception or handle it if necessary
+            return null;
+        }
     }
 
     /**

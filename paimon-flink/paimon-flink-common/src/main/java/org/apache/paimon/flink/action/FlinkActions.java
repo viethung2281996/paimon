@@ -35,12 +35,47 @@ public class FlinkActions {
     // ------------------------------------------------------------------------
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 1) {
+        String[] args1 = {
+            "mongodb_sync_table",
+            "--warehouse",
+            "hdfs://mobiocluster/paimon-lake",
+            "--database",
+            "journey_builder",
+            "--table",
+            "report",
+            "--mongodb_conf",
+            "hosts=$MONGODB_HOST",
+            "--mongodb_conf",
+            "username=$MONGODB_FLINK_USERNAME",
+            "--mongodb_conf",
+            "password=$MONGODB_FLINK_PASSWORD",
+            "--mongodb_conf",
+            "database=journey_builder",
+            "--mongodb_conf",
+            "collection=report",
+            "--mongodb_conf",
+            "schema.start.mode=parse_column",
+            "--mongodb_conf",
+            "default.id.generation=false",
+            "--mongodb_conf",
+            "scan.incremental.snapshot.enabled=true",
+            "--table_conf",
+            "sink.parallelism=1",
+            "--table_conf",
+            "bucket=4",
+            "--table_conf",
+            "write-buffer-spillable=true",
+            "--table_conf",
+            "num-sorted-run.stop-trigger=2147483647",
+            "--table_conf",
+            "sort-spill-threshold=10"
+        };
+        if (args1.length < 1) {
             printDefaultHelp();
             System.exit(1);
         }
 
-        Optional<Action> action = ActionFactory.createAction(args);
+        Optional<Action> action = ActionFactory.createAction(args1);
 
         if (action.isPresent()) {
             action.get().run();

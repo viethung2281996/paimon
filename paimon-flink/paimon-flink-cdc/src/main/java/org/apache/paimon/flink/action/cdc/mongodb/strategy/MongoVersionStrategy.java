@@ -20,6 +20,7 @@ package org.apache.paimon.flink.action.cdc.mongodb.strategy;
 
 import org.apache.paimon.flink.action.cdc.ComputedColumn;
 import org.apache.paimon.flink.action.cdc.mongodb.SchemaAcquisitionMode;
+import org.apache.paimon.flink.action.cdc.mongodb.utils.MongoDBParseUtils;
 import org.apache.paimon.flink.sink.cdc.RichCdcMultiplexRecord;
 import org.apache.paimon.types.DataTypes;
 import org.apache.paimon.types.RowType;
@@ -105,6 +106,9 @@ public interface MongoVersionStrategy {
                         mongodbConfig.getString(FIELD_NAME),
                         computedColumns,
                         rowTypeBuilder);
+            case PARSE_COLUMN:
+                return parseColumnsFromJsonRecord(
+                        document.toString(), rowTypeBuilder, computedColumns);
             case DYNAMIC:
                 return parseAndTypeJsonRow(document.toString(), rowTypeBuilder, computedColumns);
             default:
@@ -117,6 +121,12 @@ public interface MongoVersionStrategy {
             String evaluate, RowType.Builder rowTypeBuilder, List<ComputedColumn> computedColumns) {
         Map<String, String> parsedRow = JsonSerdeUtil.parseJsonMap(evaluate, String.class);
         return processParsedData(parsedRow, rowTypeBuilder, computedColumns);
+    }
+
+    default Map<String, String> parseColumnsFromJsonRecord(
+            String record, RowType.Builder fieldTypes, List<ComputedColumn> computedColumns) {
+        Map<String, String> parsedRow = MongoDBParseUtils.parseDocument(record);
+        return processParsedData(parsedRow, fieldTypes, computedColumns);
     }
 
     /** Parses fields from a JSON record based on the given parameters. */
